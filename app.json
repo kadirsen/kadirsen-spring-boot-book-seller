@@ -1,5 +1,5 @@
 {
-  "name": "sha-book-seller",
+  "name": "kdr-book-seller",
   "buildpacks": [
     {
       "url": "heroku/maven"
