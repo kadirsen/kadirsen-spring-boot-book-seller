@@ -24,78 +24,73 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 @EnableWebSecurity
-public class SecurityConfig extends WebSecurityConfigurerAdapter
-{
+public class SecurityConfig  extends WebSecurityConfigurerAdapter {
+
     @Value("${authentication.internal-api-key}")
     private String internalApiKey;
 
     @Autowired
-    private CustomUserDetailService userDetailsService;
-
+    private  CustomUserDetailService userDetailService;
     @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception
-    {
-        auth.userDetailsService(userDetailsService)
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+
+        auth.userDetailsService(userDetailService)
                 .passwordEncoder(passwordEncoder());
     }
 
-    @Override
-    @Bean(BeanIds.AUTHENTICATION_MANAGER)
-    public AuthenticationManager authenticationManagerBean() throws Exception
-    {
-        return super.authenticationManagerBean();
+    @Bean
+    public JwtAuthorizationFilter jwtAuthorizationFilter(){
+        return new JwtAuthorizationFilter();
     }
 
     @Override
-    protected void configure(HttpSecurity http) throws Exception
-    {
+    protected void configure(HttpSecurity http) throws Exception {
+
         http.cors();
         http.csrf().disable();
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
         http.authorizeRequests()
                 .antMatchers("/api/authentication/**").permitAll()
-                .antMatchers(HttpMethod.GET, "/api/book").permitAll()
+                .antMatchers(HttpMethod.GET,"/api/book").permitAll()
                 .antMatchers("/api/book/**").hasRole(Role.ADMIN.name())
-                .antMatchers("/api/internal/**").hasRole(Role.SYSTEM_MANAGER.name())
+                .antMatchers("/api/internal/**").hasRole(Role.SYSTEM_MANEGER.name())
                 .anyRequest().authenticated();
 
         //jwt filter
-        //internal > jwt > authentication
         http.addFilterBefore(jwtAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(internalApiAuthenticationFilter(), JwtAuthorizationFilter.class);
+                .addFilterBefore(internalApiAuthenticationFilter(),JwtAuthorizationFilter.class);
     }
 
+    @Override
+    @Bean(BeanIds.AUTHENTICATION_MANAGER)
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        return super.authenticationManagerBean();
+    }
     @Bean
     public InternalApiAuthenticationFilter internalApiAuthenticationFilter()
     {
         return new InternalApiAuthenticationFilter(internalApiKey);
     }
 
-    @Bean
-    public JwtAuthorizationFilter jwtAuthorizationFilter()
-    {
-        return new JwtAuthorizationFilter();
-    }
 
     @Bean
-    public PasswordEncoder passwordEncoder()
-    {
+    public PasswordEncoder passwordEncoder (){
         return new BCryptPasswordEncoder();
     }
 
     @Bean
-    public WebMvcConfigurer corsConfigurer()
-    {
-        return new WebMvcConfigurer()
-        {
+    public WebMvcConfigurer corsConfigurer(){
+
+        return new WebMvcConfigurer() {
             @Override
-            public void addCorsMappings(CorsRegistry registry)
-            {
+            public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedOrigins("*")
                         .allowedMethods("*");
             }
         };
+
     }
+
 }
